@@ -1,0 +1,53 @@
+import java.awt.Desktop;
+import java.awt.Rectangle;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSNumber;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.text.PDFTextStripperByArea;
+
+public class PDFHighlightLink {
+    
+    public static void main(String[] args) throws IOException {
+        
+        // Open the PDF file
+        File pdfFile = new File("example.pdf");
+        PDDocument pdfDoc = PDDocument.load(pdfFile);
+        
+        // Create a PDFTextStripperByArea object to extract the highlighted text and coordinates
+        PDFTextStripperByArea stripper = new PDFTextStripperByArea();
+        stripper.setSortByPosition(true);
+        
+        // Get the user's highlighted text
+        // This could be done using a GUI library such as JavaFX or Swing
+        String highlightedText = "example";
+        
+        // Search for the highlighted text in the PDF
+        for (PDPage page : pdfDoc.getPages()) {
+            stripper.extractRegions(page);
+            List<Rectangle> rects = stripper.getRegions();
+            for (Rectangle rect : rects) {
+                stripper.addRegion("highlight", rect);
+                String text = stripper.getTextForRegion("highlight");
+                if (text.contains(highlightedText)) {
+                    // Get the coordinates of the highlighted text
+                    PDRectangle rectF = new PDRectangle(rect);
+                    int pageNumber = pdfDoc.getPages().indexOf(page) + 1;
+                    float x = rectF.getLowerLeftX();
+                    float y = page.getCropBox().getHeight() - rectF.getLowerLeftY();
+                    // Create a local hyperlink to the highlighted text
+                    String hyperlink = "file://" + pdfFile.getAbsolutePath() + "#page=" + pageNumber + "&x=" + x + "&y=" + y;
+                    Desktop.getDesktop().browse(new File(hyperlink).toURI());
+                }
+            }
+        }
+        
+        pdfDoc.close();
+    }
+}
